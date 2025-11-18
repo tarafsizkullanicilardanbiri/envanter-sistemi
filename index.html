@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rossmann Envanter Sistemi</title>
+    <title>Profesyonel Envanter Sistemi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,12 +37,12 @@
         <header class="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900">Envanter Sistemi</h1>
-                <p class="text-sm text-gray-500 mt-1">Paylaşımlı ve gerçek zamanlı envanter takibi</p>
+                <p class="text-sm text-gray-500 mt-1">Rossmann Envanter Ve Stok Takip Sistemi</p>
             </div>
             <div class="text-xs text-gray-500 mt-2 sm:mt-0">
-                <div class="bg-green-50 border border-green-200 rounded px-3 py-2">
-                    <i class="fas fa-check-circle text-green-600"></i>
-                    <span class="font-medium">Bağlantı: </span>
+                <div id="statusBox" class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                    <i class="fas fa-circle-notch fa-spin text-yellow-600"></i>
+                    <span class="font-medium">Durum: </span>
                     <span id="connectionStatus" class="font-mono">Bağlanıyor...</span>
                 </div>
             </div>
@@ -98,10 +98,11 @@
         </div>
 
         <div class="mt-4 text-center text-xs text-gray-500">
-            <i class="fas fa-info-circle"></i> Bu sistem paylaşımlıdır. Tüm kullanıcılar verileri görebilir ve ekleyebilir.
+            <i class="fas fa-info-circle"></i> Bu sistem paylaşımlıdır. Tüm kullanıcılar verileri gerçek zamanlı olarak görür.
         </div>
     </div>
 
+    <!-- Yeni Kayıt / Düzenleme Modalı -->
     <div id="itemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 hidden opacity-0">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 transform transition-all scale-95 opacity-0" id="modalContent">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -172,10 +173,12 @@
         </div>
     </div>
 
+    <!-- Bildirim Kutusu -->
     <div id="messageBox" class="fixed bottom-5 right-5 z-60 p-4 rounded-lg shadow-lg text-white transition-all transform translate-x-full duration-300 ease-in-out">
         <span id="messageText"></span>
     </div>
 
+    <!-- Silme Onay Modalı -->
     <div id="confirmationModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 hidden opacity-0">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6 transform transition-all scale-95 opacity-0" id="confirmationContent">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Kaydı Sil</h3>
@@ -191,12 +194,42 @@
         </div>
     </div>
 
-    <script>
-        // Claude Storage API kullanarak envanter yönetimi
+    <script type="module">
+        // Firebase modüllerini CDN'den import et
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            updateDoc,
+            deleteDoc,
+            doc,
+            onSnapshot,
+            query,
+            orderBy
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ⚠️⚠️⚠️ KENDİ FIREBASE YAPILANDIRMANIZ ⚠️⚠️⚠️
+        // Firebase yapılandırmanızı buraya yapıştırın.
+        const firebaseConfig = {
+            apiKey: "AIzaSyCCy9A4qXGln8WhDvLpBOVWx_nF3zWPgJ4",
+            authDomain: "rossmann-envanter-sistemi.firebaseapp.com",
+            projectId: "rossmann-envanter-sistemi",
+            storageBucket: "rossmann-envanter-sistemi.firebasestorage.app",
+            messagingSenderId: "1020061626010",
+            appId: "1:1020061626010:web:f81e39cdbf6f0d4379b923"
+        };
+        // ⚠️⚠️⚠️ YAPILANDIRMA BİTTİ ⚠️⚠️⚠️
+
+        // Global değişkenler
+        let app, auth, db;
         let localInventory = [];
         let itemToDeleteId = null;
-        let isLoading = false;
+        let unsubscribe = null;
 
+        // DOM Elementleri
+        const statusBox = document.getElementById('statusBox');
         const connectionStatus = document.getElementById('connectionStatus');
         const inventoryTableBody = document.getElementById('inventoryTableBody');
         const searchInput = document.getElementById('searchInput');
@@ -229,95 +262,104 @@
         const confirmCancel = document.getElementById('confirmCancel');
         const confirmDelete = document.getElementById('confirmDelete');
 
-        // Storage API kontrolü ve başlatma
-        async function initializeApp() {
-            if (typeof window.storage === 'undefined') {
-                connectionStatus.textContent = 'Depolama Hazır';
-                connectionStatus.parentElement.className = 'bg-yellow-50 border border-yellow-200 rounded px-3 py-2';
-                showMessage('⚠️ Bu sayfa GitHub\'da yayınlandığında tam çalışacak. Şimdilik demo modunda.', false);
-                // Demo verisi ekle
-                localInventory = getDemoData();
-                renderTable(localInventory);
-            } else {
-                connectionStatus.textContent = 'Aktif';
-                await loadItems();
-            }
-        }
-
-        function getDemoData() {
-            return [
-                {
-                    id: 'demo1',
-                    envanterNo: 'ENV-001',
-                    cihazTuru: 'Laptop',
-                    markaModel: 'Dell Latitude 5520',
-                    seriNo: 'DL2023XYZ',
-                    durum: 'Kullanımda',
-                    lokasyon: 'Ofis - 3. Kat',
-                    teslimAlan: 'Ahmet Yılmaz',
-                    girisTarihi: '2024-01-15'
-                },
-                {
-                    id: 'demo2',
-                    envanterNo: 'ENV-002',
-                    cihazTuru: 'Monitör',
-                    markaModel: 'Samsung 27" 4K',
-                    seriNo: 'SM2024ABC',
-                    durum: 'Stokta',
-                    lokasyon: 'Depo',
-                    teslimAlan: '',
-                    girisTarihi: '2024-02-20'
-                }
-            ];
-        }
-
-        async function loadItems() {
-            if (isLoading) return;
-            isLoading = true;
-
+        // Firebase başlatma
+        function initializeFirebase() {
             try {
-                const result = await window.storage.list('inventory:', true);
+                // Firebase uygulamasını YALNIZCA burada başlat
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
                 
-                if (result && result.keys && result.keys.length > 0) {
-                    const items = [];
-                    for (const key of result.keys) {
-                        try {
-                            const data = await window.storage.get(key, true);
-                            if (data && data.value) {
-                                const item = JSON.parse(data.value);
-                                items.push(item);
-                            }
-                        } catch (e) {
-                            console.warn('Veri okuma hatası:', key, e);
-                        }
-                    }
-                    localInventory = items.sort((a, b) => 
-                        new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-                    );
-                } else {
-                    localInventory = [];
-                }
-                
-                renderTable(localInventory);
+                connectionStatus.textContent = 'Kimlik doğrulanıyor...';
+                setupAuth();
             } catch (error) {
-                console.error('Veri yükleme hatası:', error);
-                showMessage('Veriler yüklenirken hata oluştu.', true);
-                localInventory = [];
-                renderTable(localInventory);
-            } finally {
-                isLoading = false;
+                console.error('Firebase başlatma hatası:', error);
+                updateStatus('error', 'Hata: Firebase yapılandırması geçersiz!');
+                showMessage('Firebase yapılandırması hatalı. Lütfen firebaseConfig değerlerini kontrol edin.', true);
             }
         }
 
+        // Kimlik doğrulama
+        async function setupAuth() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    updateStatus('success', 'Bağlı');
+                    loadItems();
+                } else {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error('Giriş hatası:', error);
+                        updateStatus('error', 'Giriş başarısız');
+                        showMessage('Kimlik doğrulama hatası: ' + error.message, true);
+                    }
+                }
+            });
+        }
+
+        // Durum güncelle
+        function updateStatus(type, message) {
+            connectionStatus.textContent = message;
+            statusBox.className = 'rounded px-3 py-2';
+            
+            if (type === 'success') {
+                statusBox.classList.add('bg-green-50', 'border', 'border-green-200');
+                statusBox.innerHTML = `<i class="fas fa-check-circle text-green-600"></i> <span class="font-medium">Durum: </span><span class="font-mono">${message}</span>`;
+            } else if (type === 'error') {
+                statusBox.classList.add('bg-red-50', 'border', 'border-red-200');
+                statusBox.innerHTML = `<i class="fas fa-exclamation-circle text-red-600"></i> <span class="font-medium">Durum: </span><span class="font-mono">${message}</span>`;
+            } else {
+                statusBox.classList.add('bg-yellow-50', 'border', 'border-yellow-200');
+                statusBox.innerHTML = `<i class="fas fa-circle-notch fa-spin text-yellow-600"></i> <span class="font-medium">Durum: </span><span class="font-mono">${message}</span>`;
+            }
+        }
+
+        // Verileri yükle (gerçek zamanlı)
+        function loadItems() {
+            try {
+                const inventoryRef = collection(db, 'inventory');
+                // createdAt'a göre sırala (yeni eklenen en üstte)
+                const q = query(inventoryRef, orderBy('createdAt', 'desc')); 
+                
+                if (unsubscribe) {
+                    unsubscribe(); // Önceki dinleyiciyi kaldır (varsa)
+                }
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    localInventory = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    // Arama kutusunda filtre varsa onu uygula, yoksa tümünü render et
+                    filterTable(); 
+                }, (error) => {
+                    console.error('Veri dinleme hatası:', error);
+                    showMessage('Veri yüklenemedi: ' + error.message, true);
+                    inventoryTableBody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-red-500">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Veri okuma başarısız! Firestore kurallarınızı kontrol edin.
+                    </td></tr>`;
+                });
+            } catch (error) {
+                console.error('Koleksiyon hatası:', error);
+                showMessage('Veritabanı bağlantı hatası: ' + error.message, true);
+            }
+        }
+
+        // Form gönderme
         async function handleFormSubmit(e) {
             e.preventDefault();
+            
+            // Temel doğrulama
+            if (!envanterNo.value || !girisTarihi.value) {
+                showMessage('Lütfen * ile işaretli zorunlu alanları (Envanter No, Giriş Tarihi) doldurun.', true);
+                return;
+            }
+            
             saveButton.disabled = true;
             saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
 
-            const id = editingItemId.value || 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            
             const itemData = {
-                id: id,
                 envanterNo: envanterNo.value,
                 cihazTuru: cihazTuru.value,
                 markaModel: markaModel.value,
@@ -326,68 +368,59 @@
                 lokasyon: lokasyon.value,
                 teslimAlan: teslimAlan.value,
                 girisTarihi: girisTarihi.value,
-                createdAt: editingItemId.value ? 
-                    (localInventory.find(i => i.id === editingItemId.value)?.createdAt || new Date().toISOString()) : 
-                    new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
             try {
-                if (typeof window.storage !== 'undefined') {
-                    await window.storage.set(`inventory:${id}`, JSON.stringify(itemData), true);
-                    await loadItems();
-                    showMessage(editingItemId.value ? 'Kayıt güncellendi.' : 'Kayıt eklendi.', false);
+                const id = editingItemId.value;
+                
+                if (id) {
+                    // Güncelleme
+                    const itemRef = doc(db, 'inventory', id);
+                    await updateDoc(itemRef, itemData);
+                    showMessage('Kayıt güncellendi!', false);
                 } else {
-                    // Demo mod
-                    if (editingItemId.value) {
-                        const index = localInventory.findIndex(i => i.id === editingItemId.value);
-                        if (index !== -1) localInventory[index] = itemData;
-                    } else {
-                        localInventory.unshift(itemData);
-                    }
-                    renderTable(localInventory);
-                    showMessage('Demo modunda - GitHub\'a yüklediğinizde gerçek kayıt yapılacak.', false);
+                    // Yeni kayıt
+                    itemData.createdAt = new Date().toISOString(); // Sadece yeni kayıtta ekle
+                    await addDoc(collection(db, 'inventory'), itemData);
+                    showMessage('Kayıt eklendi!', false);
                 }
                 
                 hideItemModal();
                 itemForm.reset();
             } catch (error) {
                 console.error('Kaydetme hatası:', error);
-                showMessage('Kayıt sırasında hata: ' + error.message, true);
+                showMessage('Hata: ' + error.message, true);
             } finally {
                 saveButton.disabled = false;
                 saveButton.innerHTML = 'Kaydet';
             }
         }
 
+        // Kayıt silme
         async function handleDeleteItem(id) {
             try {
-                if (typeof window.storage !== 'undefined') {
-                    await window.storage.delete(`inventory:${id}`, true);
-                    await loadItems();
-                    showMessage('Kayıt silindi.', false);
-                } else {
-                    // Demo mod
-                    localInventory = localInventory.filter(item => item.id !== id);
-                    renderTable(localInventory);
-                    showMessage('Demo modunda silindi.', false);
-                }
+                await deleteDoc(doc(db, 'inventory', id));
+                showMessage('Kayıt silindi!', false);
             } catch (error) {
                 console.error('Silme hatası:', error);
                 showMessage('Silme hatası: ' + error.message, true);
             }
         }
 
+        // Tabloyu oluştur
         function renderTable(items) {
             inventoryTableBody.innerHTML = '';
 
             if (items.length === 0) {
+                // Arama sonucu mu boş, yoksa hiç veri mi yok?
+                const isSearchEmpty = searchInput.value.trim().length > 0;
                 inventoryTableBody.innerHTML = `
                     <tr>
                         <td colspan="9" class="px-4 py-8 text-center text-gray-500">
-                            <i class="fas fa-inbox fa-3x mb-3 text-gray-300"></i>
-                            <p class="text-lg font-medium">Henüz kayıt bulunmuyor</p>
-                            <p class="text-sm mt-1">Yeni kayıt eklemek için yukarıdaki butonu kullanın</p>
+                            <i class="fas ${isSearchEmpty ? 'fa-search' : 'fa-inbox'} fa-3x mb-3 text-gray-300"></i>
+                            <p class="text-lg font-medium">${isSearchEmpty ? 'Aramanızla eşleşen kayıt bulunamadı' : 'Henüz kayıt bulunmuyor'}</p>
+                            <p class="text-sm mt-1">${isSearchEmpty ? 'Farklı bir anahtar kelime deneyin' : 'Yeni kayıt eklemek için yukarıdaki butonu kullanın'}</p>
                         </td>
                     </tr>`;
                 return;
@@ -420,19 +453,18 @@
             addTableEventListeners();
         }
 
+        // Tablodaki butonlara event listener ekle
         function addTableEventListeners() {
-            const editButtons = inventoryTableBody.querySelectorAll('.edit-btn');
-            const deleteButtons = inventoryTableBody.querySelectorAll('.delete-btn');
-
-            editButtons.forEach(btn => {
+            inventoryTableBody.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', () => openEditModal(btn.dataset.id));
             });
 
-            deleteButtons.forEach(btn => {
+            inventoryTableBody.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', () => showDeleteConfirmation(btn.dataset.id));
             });
         }
         
+        // Modal gösterme/gizleme fonksiyonları
         function showItemModal() {
             itemModal.classList.remove('hidden');
             setTimeout(() => {
@@ -446,11 +478,12 @@
             modalContent.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 itemModal.classList.add('hidden');
-                itemForm.reset();
-                editingItemId.value = '';
+                itemForm.reset(); // Formu her kapandığında temizle
+                editingItemId.value = ''; // Düzenleme ID'sini temizle
             }, 300);
         }
         
+        // Düzenleme modalını aç
         function openEditModal(id) {
             const item = localInventory.find(item => item.id === id);
             if (!item) {
@@ -472,6 +505,7 @@
             showItemModal();
         }
 
+        // Silme onayı modalı
         function showDeleteConfirmation(id) {
             itemToDeleteId = id;
             confirmationModal.classList.remove('hidden');
@@ -490,6 +524,7 @@
             }, 300);
         }
 
+        // Yardımcı Fonksiyonlar
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
             const div = document.createElement('div');
@@ -500,6 +535,13 @@
         function formatDate(dateString) {
             if (!dateString) return '-';
             try {
+                // Tarihi 'yyyy-MM-dd' formatından ayır
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    // Tarayıcının local ayarını kullanmadan manuel formatla (dd.MM.yyyy)
+                    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+                }
+                // Eğer format beklenmedikse, tarayıcının insafına bırak
                 const date = new Date(dateString);
                 return date.toLocaleDateString('tr-TR', {
                     day: '2-digit',
@@ -507,7 +549,7 @@
                     year: 'numeric'
                 });
             } catch (e) {
-                return dateString;
+                return dateString; // Hata olursa orijinal string'i döndür
             }
         }
 
@@ -522,22 +564,25 @@
             return badges[status] || 'bg-gray-100 text-gray-800';
         }
 
+        // Filtreleme
         function filterTable() {
             const query = searchInput.value.toLowerCase().trim();
             if (!query) {
-                renderTable(localInventory);
+                renderTable(localInventory); // Filtre yoksa tüm listeyi göster
                 return;
             }
 
             const filteredItems = localInventory.filter(item => {
+                // Tüm item özelliklerinde ara
                 return Object.values(item).some(value => 
                     String(value).toLowerCase().includes(query)
                 );
             });
             
-            renderTable(filteredItems);
+            renderTable(filteredItems); // Filtrelenmiş listeyi göster
         }
         
+        // CSV Dışa Aktar
         function exportToCSV() {
             if (localInventory.length === 0) {
                 showMessage('Dışa aktarılacak veri yok.', true);
@@ -553,13 +598,15 @@
                 'durum', 'lokasyon', 'teslimAlan', 'girisTarihi'
             ];
             
-            let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
+            // UTF-8 BOM (Byte Order Mark) ekleyerek Excel'in Türkçe karakterleri doğru açmasını sağla
+            let csvContent = '\uFEFF';
             csvContent += headers.join(';') + '\n';
 
             localInventory.forEach(item => {
                 const row = keys.map(key => {
                     let cell = item[key] || '';
-                    cell = cell.toString().replace(/"/g, '""');
+                    cell = cell.toString().replace(/"/g, '""'); // Çift tırnakları escape et
+                    // Eğer hücre ; veya \n içeriyorsa çift tırnak içine al
                     if (cell.includes(';') || cell.includes('\n')) {
                         cell = `"${cell}"`;
                     }
@@ -568,16 +615,19 @@
                 csvContent += row.join(';') + '\n';
             });
 
-            const encodedUri = encodeURI(csvContent);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
             link.setAttribute('download', `envanter_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
             showMessage('CSV başarıyla dışa aktarıldı.', false);
         }
 
+        // Bildirim Mesajı
         let messageTimeout;
         function showMessage(message, isError = false) {
             clearTimeout(messageTimeout);
@@ -598,12 +648,13 @@
             }, 4000);
         }
 
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        // Ana Event Listeners
+        document.addEventListener('DOMContentLoaded', initializeFirebase);
         
         openModalButton.addEventListener('click', () => {
             modalTitle.textContent = 'Yeni Envanter Kaydı';
-            girisTarihi.valueAsDate = new Date();
+            // Yeni kayıt modalını açarken bugünün tarihini otomatik ata
+            girisTarihi.valueAsDate = new Date(); 
             showItemModal();
         });
         
@@ -611,7 +662,7 @@
         cancelButton.addEventListener('click', hideItemModal);
 
         itemModal.addEventListener('click', (e) => {
-            if (e.target === itemModal) {
+            if (e.target === itemModal) { // Modal'ın dışına tıklanırsa
                 hideItemModal();
             }
         });
@@ -626,23 +677,14 @@
         confirmCancel.addEventListener('click', hideDeleteConfirmation);
 
         confirmationModal.addEventListener('click', (e) => {
-            if (e.target === confirmationModal) {
+            if (e.target === confirmationModal) { // Onay modalının dışına tıklanırsa
                 hideDeleteConfirmation();
             }
         });
 
         itemForm.addEventListener('submit', handleFormSubmit);
-        searchInput.addEventListener('input', filterTable);
+        searchInput.addEventListener('input', filterTable); // Arama anlık filtreler
         exportCsvButton.addEventListener('click', exportToCSV);
-
-        // Otomatik yenileme (isteğe bağlı - her 30 saniyede bir)
-        if (typeof window.storage !== 'undefined') {
-            setInterval(() => {
-                if (!document.hidden && !isLoading) {
-                    loadItems();
-                }
-            }, 30000);
-        }
     </script>
 
 </body>

@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profesyonel Envanter Sistemi</title>
+    <title>Envanter Sistemi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -28,18 +29,68 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #64748b;
         }
+        .group-header {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .group-header:hover {
+            background-color: #e2e8f0;
+        }
+        .group-content {
+            transition: all 0.3s ease;
+        }
+        .group-collapsed .group-content {
+            display: none;
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+    <!-- Giriş Ekranı -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Envanter Sistemi</h2>
+                <p class="text-sm text-gray-600 mt-1">Lütfen giriş yapın</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
+                    <input type="text" id="username" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-md transition duration-200">
+                    Giriş Yap
+                </button>
+            </form>
+            <div class="mt-4 text-center text-xs text-gray-500">
+                <i class="fas fa-info-circle"></i> Demo için herhangi bir kullanıcı adı/şifre ile giriş yapabilirsiniz
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana Uygulama -->
+    <div id="appScreen" class="container mx-auto p-4 md:p-8 max-w-7xl hidden">
 
         <header class="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Envanter Sistemi</h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-3xl font-bold text-gray-900">Envanter Sistemi</h1>
+                    <button id="undoButton" class="text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed" title="Geri Al" disabled>
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
                 <p class="text-sm text-gray-500 mt-1">Rossmann Envanter Ve Stok Takip Sistemi</p>
             </div>
-            <div class="text-xs text-gray-500 mt-2 sm:mt-0">
+            <div class="flex items-center gap-4 mt-2 sm:mt-0">
+                <div id="userInfo" class="text-sm text-gray-700 bg-blue-50 px-3 py-1 rounded-md">
+                    <i class="fas fa-user mr-1"></i>
+                    <span id="currentUser">Kullanıcı</span>
+                </div>
                 <div id="statusBox" class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
                     <i class="fas fa-circle-notch fa-spin text-yellow-600"></i>
                     <span class="font-medium">Durum: </span>
@@ -48,7 +99,8 @@
             </div>
         </header>
 
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <!-- Gelişmiş Filtreleme -->
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4">
             <div class="flex flex-col md:flex-row gap-3">
                 <div class="relative flex-grow">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -58,14 +110,68 @@
                 </div>
                 
                 <div class="flex-shrink-0 flex gap-3">
+                    <button id="filterButton" class="w-full md:w-auto flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-sm">
+                        <i class="fas fa-filter"></i>
+                        <span>Filtreler</span>
+                    </button>
                     <button id="exportCsvButton" class="w-full md:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-sm">
                         <i class="fas fa-file-csv"></i>
                         <span>CSV Dışa Aktar</span>
+                    </button>
+                    <button id="importExcelButton" class="w-full md:w-auto flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-sm">
+                        <i class="fas fa-file-excel"></i>
+                        <span>Excel İçe Aktar</span>
                     </button>
                     <button id="openModalButton" class="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-md transition duration-200 shadow-sm">
                         <i class="fas fa-plus"></i>
                         <span>Yeni Kayıt Ekle</span>
                     </button>
+                </div>
+            </div>
+            
+            <!-- Gelişmiş Filtreler -->
+            <div id="advancedFilters" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 hidden">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cihaz Türü</label>
+                    <select id="filterCihazTuru" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" multiple>
+                        <!-- Dinamik olarak doldurulacak -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                    <select id="filterDurum" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" multiple>
+                        <option value="Yeni">Yeni</option>
+                        <option value="Kullanımda">Kullanımda</option>
+                        <option value="Arızalı">Arızalı</option>
+                        <option value="Bakımda">Bakımda</option>
+                        <option value="Stokta">Stokta</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lokasyon</label>
+                    <select id="filterLokasyon" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" multiple>
+                        <!-- Dinamik olarak doldurulacak -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Teslim Alan</label>
+                    <select id="filterTeslimAlan" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" multiple>
+                        <!-- Dinamik olarak doldurulacak -->
+                    </select>
+                </div>
+                <div class="md:col-span-2 lg:col-span-4 flex justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="groupByCihazTuru" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="groupByCihazTuru" class="ml-2 text-sm text-gray-700">Cihaz Türüne Göre Grupla</label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="clearFiltersButton" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md transition duration-200">
+                            Filtreleri Temizle
+                        </button>
+                        <button id="applyFiltersButton" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200">
+                            Filtreleri Uygula
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,12 +189,13 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasyon</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teslim Alan</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Giriş Tarihi</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kullanıcı</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Eylemler</th>
                         </tr>
                     </thead>
                     <tbody id="inventoryTableBody" class="divide-y divide-gray-200">
                         <tr>
-                            <td colspan="9" class="px-4 py-6 text-center text-gray-500">
+                            <td colspan="10" class="px-4 py-6 text-center text-gray-500">
                                 <i class="fas fa-spinner fa-spin mr-2"></i> Veriler yükleniyor...
                             </td>
                         </tr>
@@ -117,21 +224,25 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="envanterNo" class="block text-sm font-medium text-gray-700 mb-1">Envanter No *</label>
-                        <input type="text" id="envanterNo" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+                        <input type="text" id="envanterNo" list="envanterNoList" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+                        <datalist id="envanterNoList"></datalist>
                     </div>
                     <div>
                         <label for="cihazTuru" class="block text-sm font-medium text-gray-700 mb-1">Cihaz Türü</label>
-                        <input type="text" id="cihazTuru" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" id="cihazTuru" list="cihazTuruList" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <datalist id="cihazTuruList"></datalist>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="markaModel" class="block text-sm font-medium text-gray-700 mb-1">Marka / Model</label>
-                        <input type="text" id="markaModel" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" id="markaModel" list="markaModelList" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <datalist id="markaModelList"></datalist>
                     </div>
                     <div>
                         <label for="seriNo" class="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
-                        <input type="text" id="seriNo" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" id="seriNo" list="seriNoList" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <datalist id="seriNoList"></datalist>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,13 +258,15 @@
                     </div>
                     <div>
                         <label for="lokasyon" class="block text-sm font-medium text-gray-700 mb-1">Lokasyon</label>
-                        <input type="text" id="lokasyon" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" id="lokasyon" list="lokasyonList" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <datalist id="lokasyonList"></datalist>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="teslimAlan" class="block text-sm font-medium text-gray-700 mb-1">Teslim Alan</label>
-                        <input type="text" id="teslimAlan" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" id="teslimAlan" list="teslimAlanList" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <datalist id="teslimAlanList"></datalist>
                     </div>
                     <div>
                         <label for="girisTarihi" class="block text-sm font-medium text-gray-700 mb-1">Giriş Tarihi *</label>
@@ -168,6 +281,64 @@
                 </button>
                 <button id="saveButton" type="submit" form="itemForm" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
                     Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel İçe Aktarma Modalı -->
+    <div id="importModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 hidden opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 transform transition-all scale-95 opacity-0" id="importModalContent">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900">Excel İçe Aktar</h3>
+                <button id="closeImportModalButton" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Excel Dosyası Seç</label>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                </div>
+                
+                <div id="columnMapping" class="hidden">
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Sütun Eşleştirme</h4>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="font-medium text-sm">Excel Sütunu</div>
+                            <div class="font-medium text-sm">Sistem Sütunu</div>
+                        </div>
+                        <!-- Dinamik olarak eşleştirme seçenekleri eklenecek -->
+                    </div>
+                </div>
+                
+                <div id="importPreview" class="hidden">
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Önizleme</h4>
+                    <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <!-- Dinamik olarak sütun başlıkları eklenecek -->
+                                </tr>
+                            </thead>
+                            <tbody id="previewTableBody">
+                                <!-- Dinamik olarak önizleme verileri eklenecek -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="importStats" class="mt-2 text-sm text-gray-600">
+                        <!-- İçe aktarma istatistikleri burada gösterilecek -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+                <button id="cancelImportButton" type="button" class="bg-white hover:bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-md border border-gray-300 transition duration-200">
+                    İptal
+                </button>
+                <button id="importButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed" disabled>
+                    İçe Aktar
                 </button>
             </div>
         </div>
@@ -227,13 +398,40 @@
         let localInventory = [];
         let itemToDeleteId = null;
         let unsubscribe = null;
+        let currentUser = null;
+        let undoStack = [];
+        let isGrouped = false;
+        let currentFilters = {
+            cihazTuru: [],
+            durum: [],
+            lokasyon: [],
+            teslimAlan: []
+        };
 
         // DOM Elementleri
+        const loginScreen = document.getElementById('loginScreen');
+        const appScreen = document.getElementById('appScreen');
+        const loginForm = document.getElementById('loginForm');
+        const currentUserElement = document.getElementById('currentUser');
+        
         const statusBox = document.getElementById('statusBox');
         const connectionStatus = document.getElementById('connectionStatus');
         const inventoryTableBody = document.getElementById('inventoryTableBody');
         const searchInput = document.getElementById('searchInput');
         const exportCsvButton = document.getElementById('exportCsvButton');
+        const importExcelButton = document.getElementById('importExcelButton');
+        const undoButton = document.getElementById('undoButton');
+        
+        // Filtre elementleri
+        const filterButton = document.getElementById('filterButton');
+        const advancedFilters = document.getElementById('advancedFilters');
+        const filterCihazTuru = document.getElementById('filterCihazTuru');
+        const filterDurum = document.getElementById('filterDurum');
+        const filterLokasyon = document.getElementById('filterLokasyon');
+        const filterTeslimAlan = document.getElementById('filterTeslimAlan');
+        const groupByCihazTuru = document.getElementById('groupByCihazTuru');
+        const clearFiltersButton = document.getElementById('clearFiltersButton');
+        const applyFiltersButton = document.getElementById('applyFiltersButton');
         
         const itemModal = document.getElementById('itemModal');
         const modalContent = document.getElementById('modalContent');
@@ -254,6 +452,26 @@
         const teslimAlan = document.getElementById('teslimAlan');
         const girisTarihi = document.getElementById('girisTarihi');
 
+        // Otomatik tamamlama listeleri
+        const envanterNoList = document.getElementById('envanterNoList');
+        const cihazTuruList = document.getElementById('cihazTuruList');
+        const markaModelList = document.getElementById('markaModelList');
+        const seriNoList = document.getElementById('seriNoList');
+        const lokasyonList = document.getElementById('lokasyonList');
+        const teslimAlanList = document.getElementById('teslimAlanList');
+
+        // Excel içe aktarma modalı
+        const importModal = document.getElementById('importModal');
+        const importModalContent = document.getElementById('importModalContent');
+        const closeImportModalButton = document.getElementById('closeImportModalButton');
+        const excelFile = document.getElementById('excelFile');
+        const columnMapping = document.getElementById('columnMapping');
+        const importPreview = document.getElementById('importPreview');
+        const previewTableBody = document.getElementById('previewTableBody');
+        const importStats = document.getElementById('importStats');
+        const cancelImportButton = document.getElementById('cancelImportButton');
+        const importButton = document.getElementById('importButton');
+
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         
@@ -261,6 +479,24 @@
         const confirmationContent = document.getElementById('confirmationContent');
         const confirmCancel = document.getElementById('confirmCancel');
         const confirmDelete = document.getElementById('confirmDelete');
+
+        // Kullanıcı girişi
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Basit doğrulama - gerçek uygulamada sunucu tarafı doğrulama gerekir
+            if (username && password) {
+                currentUser = username;
+                currentUserElement.textContent = currentUser;
+                loginScreen.classList.add('hidden');
+                appScreen.classList.remove('hidden');
+                initializeFirebase();
+            } else {
+                showMessage('Lütfen kullanıcı adı ve şifre girin.', true);
+            }
+        }
 
         // Firebase başlatma
         function initializeFirebase() {
@@ -330,12 +566,19 @@
                         id: doc.id,
                         ...doc.data()
                     }));
+                    
+                    // Otomatik tamamlama listelerini güncelle
+                    updateAutocompleteLists();
+                    
+                    // Filtre seçeneklerini güncelle
+                    updateFilterOptions();
+                    
                     // Arama kutusunda filtre varsa onu uygula, yoksa tümünü render et
                     filterTable(); 
                 }, (error) => {
                     console.error('Veri dinleme hatası:', error);
                     showMessage('Veri yüklenemedi: ' + error.message, true);
-                    inventoryTableBody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-red-500">
+                    inventoryTableBody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-red-500">
                         <i class="fas fa-exclamation-triangle mr-2"></i>
                         Veri okuma başarısız! Firestore kurallarınızı kontrol edin.
                     </td></tr>`;
@@ -344,6 +587,64 @@
                 console.error('Koleksiyon hatası:', error);
                 showMessage('Veritabanı bağlantı hatası: ' + error.message, true);
             }
+        }
+
+        // Otomatik tamamlama listelerini güncelle
+        function updateAutocompleteLists() {
+            // Benzersiz değerleri topla
+            const envanterNoValues = [...new Set(localInventory.map(item => item.envanterNo).filter(Boolean))];
+            const cihazTuruValues = [...new Set(localInventory.map(item => item.cihazTuru).filter(Boolean))];
+            const markaModelValues = [...new Set(localInventory.map(item => item.markaModel).filter(Boolean))];
+            const seriNoValues = [...new Set(localInventory.map(item => item.seriNo).filter(Boolean))];
+            const lokasyonValues = [...new Set(localInventory.map(item => item.lokasyon).filter(Boolean))];
+            const teslimAlanValues = [...new Set(localInventory.map(item => item.teslimAlan).filter(Boolean))];
+            
+            // Listeleri güncelle
+            updateDatalist(envanterNoList, envanterNoValues);
+            updateDatalist(cihazTuruList, cihazTuruValues);
+            updateDatalist(markaModelList, markaModelValues);
+            updateDatalist(seriNoList, seriNoValues);
+            updateDatalist(lokasyonList, lokasyonValues);
+            updateDatalist(teslimAlanList, teslimAlanValues);
+        }
+        
+        function updateDatalist(datalistElement, values) {
+            datalistElement.innerHTML = '';
+            values.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                datalistElement.appendChild(option);
+            });
+        }
+
+        // Filtre seçeneklerini güncelle
+        function updateFilterOptions() {
+            // Benzersiz değerleri topla
+            const cihazTuruValues = [...new Set(localInventory.map(item => item.cihazTuru).filter(Boolean))];
+            const lokasyonValues = [...new Set(localInventory.map(item => item.lokasyon).filter(Boolean))];
+            const teslimAlanValues = [...new Set(localInventory.map(item => item.teslimAlan).filter(Boolean))];
+            
+            // Filtre seçeneklerini güncelle
+            updateSelectOptions(filterCihazTuru, cihazTuruValues);
+            updateSelectOptions(filterLokasyon, lokasyonValues);
+            updateSelectOptions(filterTeslimAlan, teslimAlanValues);
+        }
+        
+        function updateSelectOptions(selectElement, values) {
+            // Mevcut seçili değerleri sakla
+            const selectedValues = Array.from(selectElement.selectedOptions).map(option => option.value);
+            
+            selectElement.innerHTML = '';
+            values.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                // Eğer önceden seçiliyse tekrar seç
+                if (selectedValues.includes(value)) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
         }
 
         // Form gönderme
@@ -368,7 +669,8 @@
                 lokasyon: lokasyon.value,
                 teslimAlan: teslimAlan.value,
                 girisTarihi: girisTarihi.value,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                lastModifiedBy: currentUser
             };
 
             try {
@@ -378,11 +680,28 @@
                     // Güncelleme
                     const itemRef = doc(db, 'inventory', id);
                     await updateDoc(itemRef, itemData);
+                    
+                    // Geri alma için işlem kaydet
+                    addToUndoStack({
+                        type: 'update',
+                        id: id,
+                        data: localInventory.find(item => item.id === id)
+                    });
+                    
                     showMessage('Kayıt güncellendi!', false);
                 } else {
                     // Yeni kayıt
                     itemData.createdAt = new Date().toISOString(); // Sadece yeni kayıtta ekle
-                    await addDoc(collection(db, 'inventory'), itemData);
+                    itemData.createdBy = currentUser;
+                    const docRef = await addDoc(collection(db, 'inventory'), itemData);
+                    
+                    // Geri alma için işlem kaydet
+                    addToUndoStack({
+                        type: 'add',
+                        id: docRef.id,
+                        data: itemData
+                    });
+                    
                     showMessage('Kayıt eklendi!', false);
                 }
                 
@@ -400,11 +719,82 @@
         // Kayıt silme
         async function handleDeleteItem(id) {
             try {
+                const itemToDelete = localInventory.find(item => item.id === id);
                 await deleteDoc(doc(db, 'inventory', id));
+                
+                // Geri alma için işlem kaydet
+                addToUndoStack({
+                    type: 'delete',
+                    id: id,
+                    data: itemToDelete
+                });
+                
                 showMessage('Kayıt silindi!', false);
             } catch (error) {
                 console.error('Silme hatası:', error);
                 showMessage('Silme hatası: ' + error.message, true);
+            }
+        }
+
+        // Geri alma işlemi
+        async function handleUndo() {
+            if (undoStack.length === 0) return;
+            
+            const lastAction = undoStack.pop();
+            
+            try {
+                switch (lastAction.type) {
+                    case 'add':
+                        // Eklenen öğeyi sil
+                        await deleteDoc(doc(db, 'inventory', lastAction.id));
+                        showMessage('Ekleme işlemi geri alındı', false);
+                        break;
+                    case 'delete':
+                        // Silinen öğeyi geri ekle
+                        await addDoc(collection(db, 'inventory'), {
+                            ...lastAction.data,
+                            id: lastAction.id,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        });
+                        showMessage('Silme işlemi geri alındı', false);
+                        break;
+                    case 'update':
+                        // Güncellenen öğeyi eski haline getir
+                        await updateDoc(doc(db, 'inventory', lastAction.id), lastAction.data);
+                        showMessage('Güncelleme işlemi geri alındı', false);
+                        break;
+                }
+                
+                // Geri alma butonunu güncelle
+                updateUndoButton();
+            } catch (error) {
+                console.error('Geri alma hatası:', error);
+                showMessage('Geri alma hatası: ' + error.message, true);
+            }
+        }
+
+        // Geri alma yığınına ekle
+        function addToUndoStack(action) {
+            undoStack.push(action);
+            
+            // Yığın boyutunu sınırla (son 10 işlem)
+            if (undoStack.length > 10) {
+                undoStack.shift();
+            }
+            
+            // Geri alma butonunu güncelle
+            updateUndoButton();
+        }
+
+        // Geri alma butonunu güncelle
+        function updateUndoButton() {
+            if (undoStack.length > 0) {
+                undoButton.disabled = false;
+                undoButton.title = `Son ${undoStack.length} işlemi geri al`;
+            } else {
+                undoButton.disabled = true;
+                undoButton.title = 'Geri alınabilecek işlem yok';
             }
         }
 
@@ -414,18 +804,30 @@
 
             if (items.length === 0) {
                 // Arama sonucu mu boş, yoksa hiç veri mi yok?
-                const isSearchEmpty = searchInput.value.trim().length > 0;
+                const isSearchEmpty = searchInput.value.trim().length > 0 || Object.values(currentFilters).some(arr => arr.length > 0);
                 inventoryTableBody.innerHTML = `
                     <tr>
-                        <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="10" class="px-4 py-8 text-center text-gray-500">
                             <i class="fas ${isSearchEmpty ? 'fa-search' : 'fa-inbox'} fa-3x mb-3 text-gray-300"></i>
                             <p class="text-lg font-medium">${isSearchEmpty ? 'Aramanızla eşleşen kayıt bulunamadı' : 'Henüz kayıt bulunmuyor'}</p>
-                            <p class="text-sm mt-1">${isSearchEmpty ? 'Farklı bir anahtar kelime deneyin' : 'Yeni kayıt eklemek için yukarıdaki butonu kullanın'}</p>
+                            <p class="text-sm mt-1">${isSearchEmpty ? 'Farklı bir anahtar kelime deneyin veya filtreleri temizleyin' : 'Yeni kayıt eklemek için yukarıdaki butonu kullanın'}</p>
                         </td>
                     </tr>`;
                 return;
             }
 
+            // Gruplama özelliği aktif mi?
+            if (isGrouped) {
+                renderGroupedTable(items);
+            } else {
+                renderUngroupedTable(items);
+            }
+
+            addTableEventListeners();
+        }
+
+        // Gruplanmamış tablo
+        function renderUngroupedTable(items) {
             items.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors duration-150";
@@ -438,6 +840,7 @@
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.lokasyon)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.teslimAlan)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${formatDate(item.girisTarihi)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.createdBy || '-')}</td>
                     <td class="px-4 py-3 text-sm text-center space-x-2">
                         <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 transition-colors" title="Düzenle">
                             <i class="fas fa-pencil-alt"></i>
@@ -449,8 +852,80 @@
                 `;
                 inventoryTableBody.appendChild(tr);
             });
+        }
 
-            addTableEventListeners();
+        // Gruplanmış tablo
+        function renderGroupedTable(items) {
+            // Cihaz türlerine göre grupla
+            const groupedItems = {};
+            items.forEach(item => {
+                const groupKey = item.cihazTuru || 'Belirtilmemiş';
+                if (!groupedItems[groupKey]) {
+                    groupedItems[groupKey] = [];
+                }
+                groupedItems[groupKey].push(item);
+            });
+
+            // Grupları render et
+            Object.keys(groupedItems).forEach(groupKey => {
+                const groupItems = groupedItems[groupKey];
+                
+                // Grup başlığı
+                const groupHeader = document.createElement('tr');
+                groupHeader.className = "group-header";
+                groupHeader.innerHTML = `
+                    <td colspan="10" class="px-4 py-3 text-sm font-medium text-gray-900">
+                        <i class="fas fa-chevron-down mr-2"></i>
+                        ${escapeHTML(groupKey)} (${groupItems.length} kayıt)
+                    </td>
+                `;
+                inventoryTableBody.appendChild(groupHeader);
+                
+                // Grup içeriği
+                const groupContent = document.createElement('tbody');
+                groupContent.className = "group-content";
+                
+                groupItems.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition-colors duration-150";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-800 font-medium">${escapeHTML(item.envanterNo)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.cihazTuru)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.markaModel)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.seriNo)}</td>
+                        <td class="px-4 py-3 text-sm"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(item.durum)}">${escapeHTML(item.durum)}</span></td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.lokasyon)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.teslimAlan)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${formatDate(item.girisTarihi)}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.createdBy || '-')}</td>
+                        <td class="px-4 py-3 text-sm text-center space-x-2">
+                            <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 transition-colors" title="Düzenle">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-800 transition-colors" title="Sil">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    groupContent.appendChild(tr);
+                });
+                
+                inventoryTableBody.appendChild(groupContent);
+                
+                // Grup açma/kapama işlevi
+                groupHeader.addEventListener('click', () => {
+                    const icon = groupHeader.querySelector('i');
+                    if (groupContent.classList.contains('hidden')) {
+                        groupContent.classList.remove('hidden');
+                        icon.classList.remove('fa-chevron-right');
+                        icon.classList.add('fa-chevron-down');
+                    } else {
+                        groupContent.classList.add('hidden');
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-right');
+                    }
+                });
+            });
         }
 
         // Tablodaki butonlara event listener ekle
@@ -524,6 +999,368 @@
             }, 300);
         }
 
+        // Excel içe aktarma modalı
+        function showImportModal() {
+            importModal.classList.remove('hidden');
+            setTimeout(() => {
+                importModal.classList.remove('opacity-0');
+                importModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function hideImportModal() {
+            importModal.classList.add('opacity-0');
+            importModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                importModal.classList.add('hidden');
+                // Modalı sıfırla
+                excelFile.value = '';
+                columnMapping.classList.add('hidden');
+                importPreview.classList.add('hidden');
+                importButton.disabled = true;
+            }, 300);
+        }
+
+        // Excel dosyasını işle
+        function handleExcelFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // İlk sayfayı al
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // JSON'a dönüştür
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonData.length < 2) {
+                        showMessage('Excel dosyasında yeterli veri yok.', true);
+                        return;
+                    }
+                    
+                    // Sütun başlıklarını ve verileri ayır
+                    const headers = jsonData[0];
+                    const rows = jsonData.slice(1);
+                    
+                    // Sütun eşleştirme arayüzünü oluştur
+                    createColumnMapping(headers, rows);
+                    
+                } catch (error) {
+                    console.error('Excel işleme hatası:', error);
+                    showMessage('Excel dosyası işlenirken hata oluştu: ' + error.message, true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Sütun eşleştirme arayüzünü oluştur
+        function createColumnMapping(excelHeaders, rows) {
+            const systemFields = [
+                { key: 'envanterNo', label: 'Envanter No', required: true },
+                { key: 'cihazTuru', label: 'Cihaz Türü', required: false },
+                { key: 'markaModel', label: 'Marka / Model', required: false },
+                { key: 'seriNo', label: 'Seri No', required: false },
+                { key: 'durum', label: 'Durum', required: false },
+                { key: 'lokasyon', label: 'Lokasyon', required: false },
+                { key: 'teslimAlan', label: 'Teslim Alan', required: false },
+                { key: 'girisTarihi', label: 'Giriş Tarihi', required: true }
+            ];
+            
+            let mappingHtml = '';
+            systemFields.forEach(field => {
+                mappingHtml += `
+                    <div class="grid grid-cols-2 gap-2 items-center">
+                        <div class="text-sm font-medium">${field.label}${field.required ? ' *' : ''}</div>
+                        <div>
+                            <select class="column-select w-full px-2 py-1 rounded border border-gray-300" data-field="${field.key}">
+                                <option value="">-- Seçiniz --</option>
+                                ${excelHeaders.map((header, index) => 
+                                    `<option value="${index}">${header}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            columnMapping.innerHTML = mappingHtml;
+            columnMapping.classList.remove('hidden');
+            
+            // Önizleme oluştur
+            createImportPreview(excelHeaders, rows);
+            
+            // Sütun seçimlerini dinle
+            document.querySelectorAll('.column-select').forEach(select => {
+                select.addEventListener('change', () => validateColumnMapping());
+            });
+        }
+
+        // İçe aktarma önizlemesi oluştur
+        function createImportPreview(headers, rows) {
+            // Tablo başlıklarını oluştur
+            let tableHtml = '<tr>';
+            headers.forEach(header => {
+                tableHtml += `<th class="px-3 py-2 text-left bg-gray-100 border-b">${escapeHTML(header)}</th>`;
+            });
+            tableHtml += '</tr>';
+            
+            // İlk 5 satırı göster
+            const previewRows = rows.slice(0, 5);
+            previewRows.forEach(row => {
+                tableHtml += '<tr>';
+                headers.forEach((_, index) => {
+                    tableHtml += `<td class="px-3 py-1 border-b">${escapeHTML(row[index] || '')}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            
+            previewTableBody.innerHTML = tableHtml;
+            importPreview.classList.remove('hidden');
+            
+            // İstatistikleri göster
+            importStats.textContent = `${rows.length} kayıt bulundu (ilk 5 gösteriliyor)`;
+        }
+
+        // Sütun eşleştirmesini doğrula
+        function validateColumnMapping() {
+            const requiredFields = ['envanterNo', 'girisTarihi'];
+            const selectedFields = {};
+            
+            document.querySelectorAll('.column-select').forEach(select => {
+                const field = select.dataset.field;
+                const value = select.value;
+                if (value !== '') {
+                    selectedFields[field] = value;
+                }
+            });
+            
+            // Gerekli alanlar seçilmiş mi?
+            const allRequiredSelected = requiredFields.every(field => selectedFields[field] !== undefined);
+            
+            // En az bir alan seçilmiş mi?
+            const atLeastOneSelected = Object.keys(selectedFields).length > 0;
+            
+            importButton.disabled = !(allRequiredSelected && atLeastOneSelected);
+        }
+
+        // Excel verilerini içe aktar
+        async function importExcelData() {
+            const file = excelFile.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // İlk sayfayı al
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // JSON'a dönüştür
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (jsonData.length < 2) {
+                        showMessage('Excel dosyasında yeterli veri yok.', true);
+                        return;
+                    }
+                    
+                    // Sütun başlıklarını ve verileri ayır
+                    const headers = jsonData[0];
+                    const rows = jsonData.slice(1);
+                    
+                    // Sütun eşleştirmesini al
+                    const columnMapping = {};
+                    document.querySelectorAll('.column-select').forEach(select => {
+                        const field = select.dataset.field;
+                        const excelColumn = select.value;
+                        if (excelColumn !== '') {
+                            columnMapping[field] = parseInt(excelColumn);
+                        }
+                    });
+                    
+                    // Verileri işle
+                    let successCount = 0;
+                    let errorCount = 0;
+                    const errors = [];
+                    
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
+                        try {
+                            const itemData = {};
+                            
+                            // Eşleştirilmiş alanları doldur
+                            Object.keys(columnMapping).forEach(field => {
+                                const columnIndex = columnMapping[field];
+                                if (columnIndex < row.length) {
+                                    itemData[field] = row[columnIndex];
+                                }
+                            });
+                            
+                            // Tarih formatını düzelt
+                            if (itemData.girisTarihi) {
+                                itemData.girisTarihi = parseDate(itemData.girisTarihi);
+                            }
+                            
+                            // Gerekli alanları kontrol et
+                            if (!itemData.envanterNo || !itemData.girisTarihi) {
+                                throw new Error(`Satır ${i+2}: Envanter No ve Giriş Tarihi zorunludur`);
+                            }
+                            
+                            // Kullanıcı bilgilerini ekle
+                            itemData.createdAt = new Date().toISOString();
+                            itemData.createdBy = currentUser;
+                            itemData.updatedAt = new Date().toISOString();
+                            itemData.lastModifiedBy = currentUser;
+                            
+                            // Firestore'a ekle
+                            await addDoc(collection(db, 'inventory'), itemData);
+                            successCount++;
+                            
+                        } catch (error) {
+                            errorCount++;
+                            errors.push(`Satır ${i+2}: ${error.message}`);
+                        }
+                    }
+                    
+                    // Sonuçları göster
+                    let message = `${successCount} kayıt başarıyla eklendi`;
+                    if (errorCount > 0) {
+                        message += `, ${errorCount} kayıt eklenemedi`;
+                        console.error('İçe aktarma hataları:', errors);
+                    }
+                    
+                    showMessage(message, errorCount > 0);
+                    hideImportModal();
+                    
+                } catch (error) {
+                    console.error('İçe aktarma hatası:', error);
+                    showMessage('İçe aktarma sırasında hata oluştu: ' + error.message, true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Tarih formatını ayrıştır
+        function parseDate(dateString) {
+            if (!dateString) return '';
+            
+            // Excel seri numarası (1900 tabanlı)
+            if (typeof dateString === 'number') {
+                const date = new Date((dateString - 25569) * 86400 * 1000);
+                return date.toISOString().split('T')[0];
+            }
+            
+            // String tarih
+            const str = String(dateString).trim();
+            
+            // dd.MM.yyyy
+            if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(str)) {
+                const parts = str.split('.');
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+            
+            // dd/MM/yyyy
+            if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+                const parts = str.split('/');
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+            
+            // yyyy-MM-dd (zaten doğru format)
+            if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(str)) {
+                return str;
+            }
+            
+            // Diğer formatlar için Date nesnesi kullan
+            const date = new Date(str);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().split('T')[0];
+            }
+            
+            return str; // Dönüştürülemezse orijinal değeri döndür
+        }
+
+        // Filtreleme
+        function filterTable() {
+            let filteredItems = [...localInventory];
+            
+            // Metin araması
+            const searchQuery = searchInput.value.toLowerCase().trim();
+            if (searchQuery) {
+                filteredItems = filteredItems.filter(item => {
+                    return Object.values(item).some(value => 
+                        String(value).toLowerCase().includes(searchQuery)
+                    );
+                });
+            }
+            
+            // Gelişmiş filtreler
+            if (currentFilters.cihazTuru.length > 0) {
+                filteredItems = filteredItems.filter(item => 
+                    currentFilters.cihazTuru.includes(item.cihazTuru)
+                );
+            }
+            
+            if (currentFilters.durum.length > 0) {
+                filteredItems = filteredItems.filter(item => 
+                    currentFilters.durum.includes(item.durum)
+                );
+            }
+            
+            if (currentFilters.lokasyon.length > 0) {
+                filteredItems = filteredItems.filter(item => 
+                    currentFilters.lokasyon.includes(item.lokasyon)
+                );
+            }
+            
+            if (currentFilters.teslimAlan.length > 0) {
+                filteredItems = filteredItems.filter(item => 
+                    currentFilters.teslimAlan.includes(item.teslimAlan)
+                );
+            }
+            
+            renderTable(filteredItems);
+        }
+
+        // Filtreleri uygula
+        function applyFilters() {
+            currentFilters.cihazTuru = Array.from(filterCihazTuru.selectedOptions).map(option => option.value);
+            currentFilters.durum = Array.from(filterDurum.selectedOptions).map(option => option.value);
+            currentFilters.lokasyon = Array.from(filterLokasyon.selectedOptions).map(option => option.value);
+            currentFilters.teslimAlan = Array.from(filterTeslimAlan.selectedOptions).map(option => option.value);
+            
+            isGrouped = groupByCihazTuru.checked;
+            
+            filterTable();
+        }
+
+        // Filtreleri temizle
+        function clearFilters() {
+            searchInput.value = '';
+            filterCihazTuru.selectedIndex = -1;
+            filterDurum.selectedIndex = -1;
+            filterLokasyon.selectedIndex = -1;
+            filterTeslimAlan.selectedIndex = -1;
+            groupByCihazTuru.checked = false;
+            
+            currentFilters = {
+                cihazTuru: [],
+                durum: [],
+                lokasyon: [],
+                teslimAlan: []
+            };
+            
+            isGrouped = false;
+            filterTable();
+        }
+
         // Yardımcı Fonksiyonlar
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
@@ -563,24 +1400,6 @@
             };
             return badges[status] || 'bg-gray-100 text-gray-800';
         }
-
-        // Filtreleme
-        function filterTable() {
-            const query = searchInput.value.toLowerCase().trim();
-            if (!query) {
-                renderTable(localInventory); // Filtre yoksa tüm listeyi göster
-                return;
-            }
-
-            const filteredItems = localInventory.filter(item => {
-                // Tüm item özelliklerinde ara
-                return Object.values(item).some(value => 
-                    String(value).toLowerCase().includes(query)
-                );
-            });
-            
-            renderTable(filteredItems); // Filtrelenmiş listeyi göster
-        }
         
         // CSV Dışa Aktar
         function exportToCSV() {
@@ -591,11 +1410,11 @@
 
             const headers = [
                 'Envanter No', 'Cihaz Türü', 'Marka / Model', 'Seri No', 
-                'Durum', 'Lokasyon', 'Teslim Alan', 'Giriş Tarihi'
+                'Durum', 'Lokasyon', 'Teslim Alan', 'Giriş Tarihi', 'Oluşturan Kullanıcı'
             ];
             const keys = [
                 'envanterNo', 'cihazTuru', 'markaModel', 'seriNo', 
-                'durum', 'lokasyon', 'teslimAlan', 'girisTarihi'
+                'durum', 'lokasyon', 'teslimAlan', 'girisTarihi', 'createdBy'
             ];
             
             // UTF-8 BOM (Byte Order Mark) ekleyerek Excel'in Türkçe karakterleri doğru açmasını sağla
@@ -649,7 +1468,12 @@
         }
 
         // Ana Event Listeners
-        document.addEventListener('DOMContentLoaded', initializeFirebase);
+        document.addEventListener('DOMContentLoaded', () => {
+            // Giriş ekranını göster
+            loginScreen.classList.remove('hidden');
+        });
+        
+        loginForm.addEventListener('submit', handleLogin);
         
         openModalButton.addEventListener('click', () => {
             modalTitle.textContent = 'Yeni Envanter Kaydı';
@@ -685,6 +1509,28 @@
         itemForm.addEventListener('submit', handleFormSubmit);
         searchInput.addEventListener('input', filterTable); // Arama anlık filtreler
         exportCsvButton.addEventListener('click', exportToCSV);
+        undoButton.addEventListener('click', handleUndo);
+        
+        // Filtre event listeners
+        filterButton.addEventListener('click', () => {
+            advancedFilters.classList.toggle('hidden');
+        });
+        
+        applyFiltersButton.addEventListener('click', applyFilters);
+        clearFiltersButton.addEventListener('click', clearFilters);
+        
+        // Excel içe aktarma event listeners
+        importExcelButton.addEventListener('click', showImportModal);
+        closeImportModalButton.addEventListener('click', hideImportModal);
+        cancelImportButton.addEventListener('click', hideImportModal);
+        excelFile.addEventListener('change', handleExcelFile);
+        importButton.addEventListener('click', importExcelData);
+        
+        importModal.addEventListener('click', (e) => {
+            if (e.target === importModal) { // Modal'ın dışına tıklanırsa
+                hideImportModal();
+            }
+        });
     </script>
 
 </body>

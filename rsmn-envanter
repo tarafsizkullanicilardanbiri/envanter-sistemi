@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profesyonel Envanter Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <header class="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Envanter Sistemi</h1>
+                <p class="text-sm text-gray-500 mt-1">Paylaşımlı ve gerçek zamanlı envanter takibi</p>
+            </div>
+            <div class="text-xs text-gray-500 mt-2 sm:mt-0">
+                <div class="bg-green-50 border border-green-200 rounded px-3 py-2">
+                    <i class="fas fa-check-circle text-green-600"></i>
+                    <span class="font-medium">Bağlantı: </span>
+                    <span id="connectionStatus" class="font-mono">Bağlanıyor...</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="flex flex-col md:flex-row gap-3">
+                <div class="relative flex-grow">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </span>
+                    <input type="search" id="searchInput" placeholder="Ara (Envanter No, Model, Seri No...)" class="w-full pl-10 pr-4 py-2.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition duration-200">
+                </div>
+                
+                <div class="flex-shrink-0 flex gap-3">
+                    <button id="exportCsvButton" class="w-full md:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-md transition duration-200 shadow-sm">
+                        <i class="fas fa-file-csv"></i>
+                        <span>CSV Dışa Aktar</span>
+                    </button>
+                    <button id="openModalButton" class="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-md transition duration-200 shadow-sm">
+                        <i class="fas fa-plus"></i>
+                        <span>Yeni Kayıt Ekle</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-max table-auto">
+                    <thead class="bg-gray-100 border-b border-gray-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Envanter No</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Cihaz Türü</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Marka / Model</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Seri No</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Durum</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasyon</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teslim Alan</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Giriş Tarihi</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Eylemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="9" class="px-4 py-6 text-center text-gray-500">
+                                <i class="fas fa-spinner fa-spin mr-2"></i> Veriler yükleniyor...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-4 text-center text-xs text-gray-500">
+            <i class="fas fa-info-circle"></i> Bu sistem paylaşımlıdır. Tüm kullanıcılar verileri görebilir ve ekleyebilir.
+        </div>
+    </div>
+
+    <div id="itemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 hidden opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 transform transition-all scale-95 opacity-0" id="modalContent">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900" id="modalTitle">Yeni Envanter Kaydı</h3>
+                <button id="closeModalButton" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+
+            <form id="itemForm" class="p-6 space-y-4">
+                <input type="hidden" id="editingItemId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="envanterNo" class="block text-sm font-medium text-gray-700 mb-1">Envanter No *</label>
+                        <input type="text" id="envanterNo" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+                    </div>
+                    <div>
+                        <label for="cihazTuru" class="block text-sm font-medium text-gray-700 mb-1">Cihaz Türü</label>
+                        <input type="text" id="cihazTuru" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="markaModel" class="block text-sm font-medium text-gray-700 mb-1">Marka / Model</label>
+                        <input type="text" id="markaModel" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label for="seriNo" class="block text-sm font-medium text-gray-700 mb-1">Seri No</label>
+                        <input type="text" id="seriNo" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="durum" class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                        <select id="durum" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="Yeni">Yeni</option>
+                            <option value="Kullanımda">Kullanımda</option>
+                            <option value="Arızalı">Arızalı</option>
+                            <option value="Bakımda">Bakımda</option>
+                            <option value="Stokta">Stokta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="lokasyon" class="block text-sm font-medium text-gray-700 mb-1">Lokasyon</label>
+                        <input type="text" id="lokasyon" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="teslimAlan" class="block text-sm font-medium text-gray-700 mb-1">Teslim Alan</label>
+                        <input type="text" id="teslimAlan" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label for="girisTarihi" class="block text-sm font-medium text-gray-700 mb-1">Giriş Tarihi *</label>
+                        <input type="date" id="girisTarihi" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+                    </div>
+                </div>
+            </form>
+
+            <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+                <button id="cancelButton" type="button" class="bg-white hover:bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-md border border-gray-300 transition duration-200">
+                    İptal
+                </button>
+                <button id="saveButton" type="submit" form="itemForm" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                    Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox" class="fixed bottom-5 right-5 z-60 p-4 rounded-lg shadow-lg text-white transition-all transform translate-x-full duration-300 ease-in-out">
+        <span id="messageText"></span>
+    </div>
+
+    <div id="confirmationModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 hidden opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6 transform transition-all scale-95 opacity-0" id="confirmationContent">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Kaydı Sil</h3>
+            <p class="text-sm text-gray-600 mb-6">Bu kaydı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</p>
+            <div class="flex justify-end gap-3">
+                <button id="confirmCancel" class="bg-white hover:bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-md border border-gray-300 transition duration-200">
+                    İptal
+                </button>
+                <button id="confirmDelete" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                    Sil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Claude Storage API kullanarak envanter yönetimi
+        let localInventory = [];
+        let itemToDeleteId = null;
+        let isLoading = false;
+
+        const connectionStatus = document.getElementById('connectionStatus');
+        const inventoryTableBody = document.getElementById('inventoryTableBody');
+        const searchInput = document.getElementById('searchInput');
+        const exportCsvButton = document.getElementById('exportCsvButton');
+        
+        const itemModal = document.getElementById('itemModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const openModalButton = document.getElementById('openModalButton');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const saveButton = document.getElementById('saveButton');
+        const itemForm = document.getElementById('itemForm');
+
+        const editingItemId = document.getElementById('editingItemId');
+        const envanterNo = document.getElementById('envanterNo');
+        const cihazTuru = document.getElementById('cihazTuru');
+        const markaModel = document.getElementById('markaModel');
+        const seriNo = document.getElementById('seriNo');
+        const durum = document.getElementById('durum');
+        const lokasyon = document.getElementById('lokasyon');
+        const teslimAlan = document.getElementById('teslimAlan');
+        const girisTarihi = document.getElementById('girisTarihi');
+
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmationContent = document.getElementById('confirmationContent');
+        const confirmCancel = document.getElementById('confirmCancel');
+        const confirmDelete = document.getElementById('confirmDelete');
+
+        // Storage API kontrolü ve başlatma
+        async function initializeApp() {
+            if (typeof window.storage === 'undefined') {
+                connectionStatus.textContent = 'Depolama Hazır';
+                connectionStatus.parentElement.className = 'bg-yellow-50 border border-yellow-200 rounded px-3 py-2';
+                showMessage('⚠️ Bu sayfa GitHub\'da yayınlandığında tam çalışacak. Şimdilik demo modunda.', false);
+                // Demo verisi ekle
+                localInventory = getDemoData();
+                renderTable(localInventory);
+            } else {
+                connectionStatus.textContent = 'Aktif';
+                await loadItems();
+            }
+        }
+
+        function getDemoData() {
+            return [
+                {
+                    id: 'demo1',
+                    envanterNo: 'ENV-001',
+                    cihazTuru: 'Laptop',
+                    markaModel: 'Dell Latitude 5520',
+                    seriNo: 'DL2023XYZ',
+                    durum: 'Kullanımda',
+                    lokasyon: 'Ofis - 3. Kat',
+                    teslimAlan: 'Ahmet Yılmaz',
+                    girisTarihi: '2024-01-15'
+                },
+                {
+                    id: 'demo2',
+                    envanterNo: 'ENV-002',
+                    cihazTuru: 'Monitör',
+                    markaModel: 'Samsung 27" 4K',
+                    seriNo: 'SM2024ABC',
+                    durum: 'Stokta',
+                    lokasyon: 'Depo',
+                    teslimAlan: '',
+                    girisTarihi: '2024-02-20'
+                }
+            ];
+        }
+
+        async function loadItems() {
+            if (isLoading) return;
+            isLoading = true;
+
+            try {
+                const result = await window.storage.list('inventory:', true);
+                
+                if (result && result.keys && result.keys.length > 0) {
+                    const items = [];
+                    for (const key of result.keys) {
+                        try {
+                            const data = await window.storage.get(key, true);
+                            if (data && data.value) {
+                                const item = JSON.parse(data.value);
+                                items.push(item);
+                            }
+                        } catch (e) {
+                            console.warn('Veri okuma hatası:', key, e);
+                        }
+                    }
+                    localInventory = items.sort((a, b) => 
+                        new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+                    );
+                } else {
+                    localInventory = [];
+                }
+                
+                renderTable(localInventory);
+            } catch (error) {
+                console.error('Veri yükleme hatası:', error);
+                showMessage('Veriler yüklenirken hata oluştu.', true);
+                localInventory = [];
+                renderTable(localInventory);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+
+            const id = editingItemId.value || 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            const itemData = {
+                id: id,
+                envanterNo: envanterNo.value,
+                cihazTuru: cihazTuru.value,
+                markaModel: markaModel.value,
+                seriNo: seriNo.value,
+                durum: durum.value,
+                lokasyon: lokasyon.value,
+                teslimAlan: teslimAlan.value,
+                girisTarihi: girisTarihi.value,
+                createdAt: editingItemId.value ? 
+                    (localInventory.find(i => i.id === editingItemId.value)?.createdAt || new Date().toISOString()) : 
+                    new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                if (typeof window.storage !== 'undefined') {
+                    await window.storage.set(`inventory:${id}`, JSON.stringify(itemData), true);
+                    await loadItems();
+                    showMessage(editingItemId.value ? 'Kayıt güncellendi.' : 'Kayıt eklendi.', false);
+                } else {
+                    // Demo mod
+                    if (editingItemId.value) {
+                        const index = localInventory.findIndex(i => i.id === editingItemId.value);
+                        if (index !== -1) localInventory[index] = itemData;
+                    } else {
+                        localInventory.unshift(itemData);
+                    }
+                    renderTable(localInventory);
+                    showMessage('Demo modunda - GitHub\'a yüklediğinizde gerçek kayıt yapılacak.', false);
+                }
+                
+                hideItemModal();
+                itemForm.reset();
+            } catch (error) {
+                console.error('Kaydetme hatası:', error);
+                showMessage('Kayıt sırasında hata: ' + error.message, true);
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'Kaydet';
+            }
+        }
+
+        async function handleDeleteItem(id) {
+            try {
+                if (typeof window.storage !== 'undefined') {
+                    await window.storage.delete(`inventory:${id}`, true);
+                    await loadItems();
+                    showMessage('Kayıt silindi.', false);
+                } else {
+                    // Demo mod
+                    localInventory = localInventory.filter(item => item.id !== id);
+                    renderTable(localInventory);
+                    showMessage('Demo modunda silindi.', false);
+                }
+            } catch (error) {
+                console.error('Silme hatası:', error);
+                showMessage('Silme hatası: ' + error.message, true);
+            }
+        }
+
+        function renderTable(items) {
+            inventoryTableBody.innerHTML = '';
+
+            if (items.length === 0) {
+                inventoryTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-inbox fa-3x mb-3 text-gray-300"></i>
+                            <p class="text-lg font-medium">Henüz kayıt bulunmuyor</p>
+                            <p class="text-sm mt-1">Yeni kayıt eklemek için yukarıdaki butonu kullanın</p>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors duration-150";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-sm text-gray-800 font-medium">${escapeHTML(item.envanterNo)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.cihazTuru)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.markaModel)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.seriNo)}</td>
+                    <td class="px-4 py-3 text-sm"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(item.durum)}">${escapeHTML(item.durum)}</span></td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.lokasyon)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.teslimAlan)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${formatDate(item.girisTarihi)}</td>
+                    <td class="px-4 py-3 text-sm text-center space-x-2">
+                        <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 transition-colors" title="Düzenle">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-800 transition-colors" title="Sil">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                inventoryTableBody.appendChild(tr);
+            });
+
+            addTableEventListeners();
+        }
+
+        function addTableEventListeners() {
+            const editButtons = inventoryTableBody.querySelectorAll('.edit-btn');
+            const deleteButtons = inventoryTableBody.querySelectorAll('.delete-btn');
+
+            editButtons.forEach(btn => {
+                btn.addEventListener('click', () => openEditModal(btn.dataset.id));
+            });
+
+            deleteButtons.forEach(btn => {
+                btn.addEventListener('click', () => showDeleteConfirmation(btn.dataset.id));
+            });
+        }
+        
+        function showItemModal() {
+            itemModal.classList.remove('hidden');
+            setTimeout(() => {
+                itemModal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function hideItemModal() {
+            itemModal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                itemModal.classList.add('hidden');
+                itemForm.reset();
+                editingItemId.value = '';
+            }, 300);
+        }
+        
+        function openEditModal(id) {
+            const item = localInventory.find(item => item.id === id);
+            if (!item) {
+                showMessage('Kayıt bulunamadı.', true);
+                return;
+            }
+
+            modalTitle.textContent = 'Envanter Kaydını Düzenle';
+            editingItemId.value = id;
+            envanterNo.value = item.envanterNo || '';
+            cihazTuru.value = item.cihazTuru || '';
+            markaModel.value = item.markaModel || '';
+            seriNo.value = item.seriNo || '';
+            durum.value = item.durum || 'Yeni';
+            lokasyon.value = item.lokasyon || '';
+            teslimAlan.value = item.teslimAlan || '';
+            girisTarihi.value = item.girisTarihi || '';
+            
+            showItemModal();
+        }
+
+        function showDeleteConfirmation(id) {
+            itemToDeleteId = id;
+            confirmationModal.classList.remove('hidden');
+            setTimeout(() => {
+                confirmationModal.classList.remove('opacity-0');
+                confirmationContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function hideDeleteConfirmation() {
+            confirmationModal.classList.add('opacity-0');
+            confirmationContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                confirmationModal.classList.add('hidden');
+                itemToDeleteId = null;
+            }, 300);
+        }
+
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('tr-TR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'Yeni': 'bg-green-100 text-green-800',
+                'Stokta': 'bg-green-100 text-green-800',
+                'Kullanımda': 'bg-blue-100 text-blue-800',
+                'Bakımda': 'bg-yellow-100 text-yellow-800',
+                'Arızalı': 'bg-red-100 text-red-800'
+            };
+            return badges[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function filterTable() {
+            const query = searchInput.value.toLowerCase().trim();
+            if (!query) {
+                renderTable(localInventory);
+                return;
+            }
+
+            const filteredItems = localInventory.filter(item => {
+                return Object.values(item).some(value => 
+                    String(value).toLowerCase().includes(query)
+                );
+            });
+            
+            renderTable(filteredItems);
+        }
+        
+        function exportToCSV() {
+            if (localInventory.length === 0) {
+                showMessage('Dışa aktarılacak veri yok.', true);
+                return;
+            }
+
+            const headers = [
+                'Envanter No', 'Cihaz Türü', 'Marka / Model', 'Seri No', 
+                'Durum', 'Lokasyon', 'Teslim Alan', 'Giriş Tarihi'
+            ];
+            const keys = [
+                'envanterNo', 'cihazTuru', 'markaModel', 'seriNo', 
+                'durum', 'lokasyon', 'teslimAlan', 'girisTarihi'
+            ];
+            
+            let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
+            csvContent += headers.join(';') + '\n';
+
+            localInventory.forEach(item => {
+                const row = keys.map(key => {
+                    let cell = item[key] || '';
+                    cell = cell.toString().replace(/"/g, '""');
+                    if (cell.includes(';') || cell.includes('\n')) {
+                        cell = `"${cell}"`;
+                    }
+                    return cell;
+                });
+                csvContent += row.join(';') + '\n';
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `envanter_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage('CSV başarıyla dışa aktarıldı.', false);
+        }
+
+        let messageTimeout;
+        function showMessage(message, isError = false) {
+            clearTimeout(messageTimeout);
+            
+            messageText.textContent = message;
+            messageBox.className = 'fixed bottom-5 right-5 z-60 p-4 rounded-lg shadow-lg text-white transition-all transform duration-300 ease-in-out max-w-md';
+            
+            if (isError) {
+                messageBox.classList.add('bg-red-600');
+            } else {
+                messageBox.classList.add('bg-green-600');
+            }
+            
+            messageBox.classList.remove('translate-x-full');
+            
+            messageTimeout = setTimeout(() => {
+                messageBox.classList.add('translate-x-full');
+            }, 4000);
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        
+        openModalButton.addEventListener('click', () => {
+            modalTitle.textContent = 'Yeni Envanter Kaydı';
+            girisTarihi.valueAsDate = new Date();
+            showItemModal();
+        });
+        
+        closeModalButton.addEventListener('click', hideItemModal);
+        cancelButton.addEventListener('click', hideItemModal);
+
+        itemModal.addEventListener('click', (e) => {
+            if (e.target === itemModal) {
+                hideItemModal();
+            }
+        });
+        
+        confirmDelete.addEventListener('click', () => {
+            if (itemToDeleteId) {
+                handleDeleteItem(itemToDeleteId);
+            }
+            hideDeleteConfirmation();
+        });
+        
+        confirmCancel.addEventListener('click', hideDeleteConfirmation);
+
+        confirmationModal.addEventListener('click', (e) => {
+            if (e.target === confirmationModal) {
+                hideDeleteConfirmation();
+            }
+        });
+
+        itemForm.addEventListener('submit', handleFormSubmit);
+        searchInput.addEventListener('input', filterTable);
+        exportCsvButton.addEventListener('click', exportToCSV);
+
+        // Otomatik yenileme (isteğe bağlı - her 30 saniyede bir)
+        if (typeof window.storage !== 'undefined') {
+            setInterval(() => {
+                if (!document.hidden && !isLoading) {
+                    loadItems();
+                }
+            }, 30000);
+        }
+    </script>
+
+</body>
+</html>

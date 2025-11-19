@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Envanter Sistemi</title>
+    <title>Rossmann Envanter Sistemi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,32 +43,78 @@
         .group-collapsed .group-content {
             display: none;
         }
+        /* Giriş butonu animasyonları */
+        .login-btn {
+            transition: all 0.2s ease;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
     </style>
 </head>
 <body class="antialiased text-gray-800">
 
     <!-- Giriş Ekranı -->
-    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Envanter Sistemi</h2>
-                <p class="text-sm text-gray-600 mt-1">Lütfen giriş yapın</p>
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md m-4 overflow-hidden">
+            <div class="bg-red-700 p-6 text-center">
+                <h2 class="text-2xl font-bold text-white">Envanter Sistemi</h2>
+                <p class="text-red-100 mt-1 text-sm">Lütfen giriş yapacak personeli seçiniz</p>
             </div>
-            <form id="loginForm" class="space-y-4">
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
-                    <input type="text" id="username" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+            
+            <div class="p-8">
+                <div class="grid grid-cols-1 gap-3">
+                    <button onclick="window.loginAs('Mustafa Ay')" class="login-btn w-full flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 group">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                                <span class="font-bold text-lg">MA</span>
+                            </div>
+                            <span class="ml-4 font-semibold text-gray-700 group-hover:text-gray-900">Mustafa Ay</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-red-500"></i>
+                    </button>
+
+                    <button onclick="window.loginAs('Doğan Çevik')" class="login-btn w-full flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 group">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                                <span class="font-bold text-lg">DÇ</span>
+                            </div>
+                            <span class="ml-4 font-semibold text-gray-700 group-hover:text-gray-900">Doğan Çevik</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-red-500"></i>
+                    </button>
+
+                    <button onclick="window.loginAs('Samet Kandemir')" class="login-btn w-full flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 group">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                                <span class="font-bold text-lg">SK</span>
+                            </div>
+                            <span class="ml-4 font-semibold text-gray-700 group-hover:text-gray-900">Samet Kandemir</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-red-500"></i>
+                    </button>
+
+                    <button onclick="window.loginAs('M. Arif Çoban')" class="login-btn w-full flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 group">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                                <span class="font-bold text-lg">MA</span>
+                            </div>
+                            <span class="ml-4 font-semibold text-gray-700 group-hover:text-gray-900">M. Arif Çoban</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-red-500"></i>
+                    </button>
+
+                    <button onclick="window.loginAs('Şükür Yıldız')" class="login-btn w-full flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-lg hover:border-red-500 hover:bg-red-50 group">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                                <span class="font-bold text-lg">ŞY</span>
+                            </div>
+                            <span class="ml-4 font-semibold text-gray-700 group-hover:text-gray-900">Şükür Yıldız</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300 group-hover:text-red-500"></i>
+                    </button>
                 </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
-                    <input type="password" id="password" class="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-md transition duration-200">
-                    Giriş Yap
-                </button>
-            </form>
-            <div class="mt-4 text-center text-xs text-gray-500">
-                <i class="fas fa-info-circle"></i> Demo için herhangi bir kullanıcı adı/şifre ile giriş yapabilirsiniz
             </div>
         </div>
     </div>
@@ -80,22 +126,27 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-3xl font-bold text-gray-900">Envanter Sistemi</h1>
-                    <button id="undoButton" class="text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed" title="Geri Al" disabled>
+                    <button id="undoButton" class="text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors p-2 rounded-full hover:bg-gray-100" title="Geri Al" disabled>
                         <i class="fas fa-undo"></i>
                     </button>
                 </div>
                 <p class="text-sm text-gray-500 mt-1">Rossmann Envanter Ve Stok Takip Sistemi</p>
             </div>
             <div class="flex items-center gap-4 mt-2 sm:mt-0">
-                <div id="userInfo" class="text-sm text-gray-700 bg-blue-50 px-3 py-1 rounded-md">
-                    <i class="fas fa-user mr-1"></i>
-                    <span id="currentUser">Kullanıcı</span>
+                <div id="userInfo" class="text-sm text-gray-700 bg-blue-50 px-3 py-1 rounded-md flex items-center gap-2 border border-blue-100">
+                    <div class="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 text-xs font-bold">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span id="currentUser" class="font-medium">Kullanıcı</span>
                 </div>
-                <div id="statusBox" class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                <div id="statusBox" class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 text-sm">
                     <i class="fas fa-circle-notch fa-spin text-yellow-600"></i>
                     <span class="font-medium">Durum: </span>
                     <span id="connectionStatus" class="font-mono">Bağlanıyor...</span>
                 </div>
+                <button onclick="location.reload()" class="text-gray-500 hover:text-gray-700 text-sm underline" title="Sayfayı Yenile">
+                    Çıkış
+                </button>
             </div>
         </header>
 
@@ -189,7 +240,7 @@
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lokasyon</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teslim Alan</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Giriş Tarihi</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kullanıcı</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">İşlem Yapan</th>
                             <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Eylemler</th>
                         </tr>
                     </thead>
@@ -376,13 +427,13 @@
             updateDoc,
             deleteDoc,
             doc,
+            setDoc, 
             onSnapshot,
             query,
             orderBy
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ⚠️⚠️⚠️ KENDİ FIREBASE YAPILANDIRMANIZ ⚠️⚠️⚠️
-        // Firebase yapılandırmanızı buraya yapıştırın.
         const firebaseConfig = {
             apiKey: "AIzaSyCCy9A4qXGln8WhDvLpBOVWx_nF3zWPgJ4",
             authDomain: "rossmann-envanter-sistemi.firebaseapp.com",
@@ -411,7 +462,6 @@
         // DOM Elementleri
         const loginScreen = document.getElementById('loginScreen');
         const appScreen = document.getElementById('appScreen');
-        const loginForm = document.getElementById('loginForm');
         const currentUserElement = document.getElementById('currentUser');
         
         const statusBox = document.getElementById('statusBox');
@@ -480,23 +530,14 @@
         const confirmCancel = document.getElementById('confirmCancel');
         const confirmDelete = document.getElementById('confirmDelete');
 
-        // Kullanıcı girişi
-        function handleLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            // Basit doğrulama - gerçek uygulamada sunucu tarafı doğrulama gerekir
-            if (username && password) {
-                currentUser = username;
-                currentUserElement.textContent = currentUser;
-                loginScreen.classList.add('hidden');
-                appScreen.classList.remove('hidden');
-                initializeFirebase();
-            } else {
-                showMessage('Lütfen kullanıcı adı ve şifre girin.', true);
-            }
-        }
+        // Kullanıcı seçimi (Butonlardan çağrılır)
+        window.loginAs = function(name) {
+            currentUser = name;
+            currentUserElement.textContent = currentUser;
+            loginScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+            initializeFirebase();
+        };
 
         // Firebase başlatma
         function initializeFirebase() {
@@ -536,7 +577,7 @@
         // Durum güncelle
         function updateStatus(type, message) {
             connectionStatus.textContent = message;
-            statusBox.className = 'rounded px-3 py-2';
+            statusBox.className = 'rounded px-3 py-2 text-sm';
             
             if (type === 'success') {
                 statusBox.classList.add('bg-green-50', 'border', 'border-green-200');
@@ -660,6 +701,7 @@
             saveButton.disabled = true;
             saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
 
+            // Temel veriler
             const itemData = {
                 envanterNo: envanterNo.value,
                 cihazTuru: cihazTuru.value,
@@ -670,7 +712,7 @@
                 teslimAlan: teslimAlan.value,
                 girisTarihi: girisTarihi.value,
                 updatedAt: new Date().toISOString(),
-                lastModifiedBy: currentUser
+                lastModifiedBy: currentUser // Her işlemde güncelleyen kişi değişir
             };
 
             try {
@@ -679,20 +721,23 @@
                 if (id) {
                     // Güncelleme
                     const itemRef = doc(db, 'inventory', id);
+                    // Eski veriyi yığın için sakla
+                    const oldItem = localInventory.find(item => item.id === id);
+                    
                     await updateDoc(itemRef, itemData);
                     
                     // Geri alma için işlem kaydet
                     addToUndoStack({
                         type: 'update',
                         id: id,
-                        data: localInventory.find(item => item.id === id)
+                        data: oldItem // Geri almak için eski veriyi sakla
                     });
                     
                     showMessage('Kayıt güncellendi!', false);
                 } else {
                     // Yeni kayıt
-                    itemData.createdAt = new Date().toISOString(); // Sadece yeni kayıtta ekle
-                    itemData.createdBy = currentUser;
+                    itemData.createdAt = new Date().toISOString();
+                    itemData.createdBy = currentUser; // Sadece ilk oluştuğunda
                     const docRef = await addDoc(collection(db, 'inventory'), itemData);
                     
                     // Geri alma için işlem kaydet
@@ -745,23 +790,25 @@
             try {
                 switch (lastAction.type) {
                     case 'add':
-                        // Eklenen öğeyi sil
+                        // Ekleme işlemini geri al -> Yani yeni eklenen kaydı SİL
                         await deleteDoc(doc(db, 'inventory', lastAction.id));
                         showMessage('Ekleme işlemi geri alındı', false);
                         break;
+                        
                     case 'delete':
-                        // Silinen öğeyi geri ekle
-                        await addDoc(collection(db, 'inventory'), {
-                            ...lastAction.data,
-                            id: lastAction.id,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                        });
+                        // Silme işlemini geri al -> Yani silinen kaydı TEKRAR EKLE
+                        // ÖNEMLİ DÜZELTME: addDoc yerine setDoc kullanıyoruz ki ID aynı kalsın!
+                        const { id, ...dataToRestore } = lastAction.data;
+                        // ID'si eski ID ile aynı olan bir döküman yarat/üzerine yaz
+                        await setDoc(doc(db, 'inventory', lastAction.id), dataToRestore);
                         showMessage('Silme işlemi geri alındı', false);
                         break;
+                        
                     case 'update':
-                        // Güncellenen öğeyi eski haline getir
-                        await updateDoc(doc(db, 'inventory', lastAction.id), lastAction.data);
+                        // Güncellemeyi geri al -> Veriyi eski haline (lastAction.data) getir
+                        // lastAction.data içinde eski veriler var
+                        const { id: updateId, ...prevData } = lastAction.data;
+                        await updateDoc(doc(db, 'inventory', lastAction.id), prevData);
                         showMessage('Güncelleme işlemi geri alındı', false);
                         break;
                 }
@@ -829,6 +876,9 @@
         // Gruplanmamış tablo
         function renderUngroupedTable(items) {
             items.forEach(item => {
+                // İşlem yapanı belirle: Varsa son değiştiren, yoksa oluşturan
+                const actorName = item.lastModifiedBy || item.createdBy || '-';
+                
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-50 transition-colors duration-150";
                 tr.innerHTML = `
@@ -840,7 +890,7 @@
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.lokasyon)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.teslimAlan)}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">${formatDate(item.girisTarihi)}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.createdBy || '-')}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 font-medium text-blue-900">${escapeHTML(actorName)}</td>
                     <td class="px-4 py-3 text-sm text-center space-x-2">
                         <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 transition-colors" title="Düzenle">
                             <i class="fas fa-pencil-alt"></i>
@@ -886,6 +936,9 @@
                 groupContent.className = "group-content";
                 
                 groupItems.forEach(item => {
+                    // İşlem yapanı belirle
+                    const actorName = item.lastModifiedBy || item.createdBy || '-';
+
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-gray-50 transition-colors duration-150";
                     tr.innerHTML = `
@@ -897,7 +950,7 @@
                         <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.lokasyon)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.teslimAlan)}</td>
                         <td class="px-4 py-3 text-sm text-gray-700">${formatDate(item.girisTarihi)}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">${escapeHTML(item.createdBy || '-')}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 font-medium text-blue-900">${escapeHTML(actorName)}</td>
                         <td class="px-4 py-3 text-sm text-center space-x-2">
                             <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 transition-colors" title="Düzenle">
                                 <i class="fas fa-pencil-alt"></i>
@@ -1410,26 +1463,38 @@
 
             const headers = [
                 'Envanter No', 'Cihaz Türü', 'Marka / Model', 'Seri No', 
-                'Durum', 'Lokasyon', 'Teslim Alan', 'Giriş Tarihi', 'Oluşturan Kullanıcı'
+                'Durum', 'Lokasyon', 'Teslim Alan', 'Giriş Tarihi', 'İşlem Yapan'
             ];
-            const keys = [
-                'envanterNo', 'cihazTuru', 'markaModel', 'seriNo', 
-                'durum', 'lokasyon', 'teslimAlan', 'girisTarihi', 'createdBy'
-            ];
+            // createdBy yerine lastModifiedBy'ı kontrol et, yoksa createdBy
+            // Veriyi işlerken bu mantığı kuracağız
             
             // UTF-8 BOM (Byte Order Mark) ekleyerek Excel'in Türkçe karakterleri doğru açmasını sağla
             let csvContent = '\uFEFF';
             csvContent += headers.join(';') + '\n';
 
             localInventory.forEach(item => {
-                const row = keys.map(key => {
-                    let cell = item[key] || '';
-                    cell = cell.toString().replace(/"/g, '""'); // Çift tırnakları escape et
+                const actorName = item.lastModifiedBy || item.createdBy || '-';
+                
+                const rowData = [
+                    item.envanterNo,
+                    item.cihazTuru,
+                    item.markaModel,
+                    item.seriNo,
+                    item.durum,
+                    item.lokasyon,
+                    item.teslimAlan,
+                    item.girisTarihi,
+                    actorName
+                ];
+
+                const row = rowData.map(cell => {
+                    let cellStr = (cell || '').toString();
+                    cellStr = cellStr.replace(/"/g, '""'); // Çift tırnakları escape et
                     // Eğer hücre ; veya \n içeriyorsa çift tırnak içine al
-                    if (cell.includes(';') || cell.includes('\n')) {
-                        cell = `"${cell}"`;
+                    if (cellStr.includes(';') || cellStr.includes('\n')) {
+                        cellStr = `"${cellStr}"`;
                     }
-                    return cell;
+                    return cellStr;
                 });
                 csvContent += row.join(';') + '\n';
             });
@@ -1472,8 +1537,6 @@
             // Giriş ekranını göster
             loginScreen.classList.remove('hidden');
         });
-        
-        loginForm.addEventListener('submit', handleLogin);
         
         openModalButton.addEventListener('click', () => {
             modalTitle.textContent = 'Yeni Envanter Kaydı';

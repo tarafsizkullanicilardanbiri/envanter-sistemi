@@ -396,7 +396,7 @@
     </div>
 
     <!-- Bildirim Kutusu -->
-    <div id="messageBox" class="fixed bottom-5 right-5 z-60 p-4 rounded-lg shadow-lg text-white transition-all transform translate-x-full duration-300 ease-in-out">
+    <div id="messageBox" class="hidden opacity-0 fixed bottom-5 right-5 z-60 p-4 rounded-lg shadow-lg text-white transition-all transform translate-x-full duration-300 ease-in-out">
         <span id="messageText"></span>
     </div>
 
@@ -1513,24 +1513,34 @@
 
         // Bildirim Mesajı
         let messageTimeout;
+
         function showMessage(message, isError = false) {
             clearTimeout(messageTimeout);
-            
+
             messageText.textContent = message;
+
+            // Temiz başlangıç
             messageBox.className = 'fixed bottom-5 right-5 z-60 p-4 rounded-lg shadow-lg text-white transition-all transform duration-300 ease-in-out max-w-md';
-            
+
+            messageBox.classList.remove('translate-x-full', 'opacity-0');
+
             if (isError) {
                 messageBox.classList.add('bg-red-600');
             } else {
                 messageBox.classList.add('bg-green-600');
             }
-            
-            messageBox.classList.remove('translate-x-full');
-            
+
+            // 4 saniye sonra gizle
             messageTimeout = setTimeout(() => {
-                messageBox.classList.add('translate-x-full');
+                messageBox.classList.add('translate-x-full', 'opacity-0');
+
+                // Animasyon bitince DOM'dan tamamen kaldır (hidden)
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                }, 300); // transition süresi
             }, 4000);
         }
+
 
         // Ana Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
